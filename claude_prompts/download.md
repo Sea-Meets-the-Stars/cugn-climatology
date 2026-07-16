@@ -18,7 +18,8 @@ I will refer to it as `2026 beta`.
 ## Prompts
 
 1, Execute the first task under Grab the data.
-2. Execute the second task under Explore.
+2. Execute the first task under Explore.
+3. Execute the second task under Explore.
 
 ## Grab the data
 
@@ -30,6 +31,8 @@ I will refer to it as `2026 beta`.
 `https://spraydata.ucsd.edu/products/cugn-climatology/new.php` and put them on this laptop in the `$OS_SPRAY/CUGN/Climatology/2026 beta` directory.  I wish for you to explore these data and report on your findings in the file `context/initial_exploration.md`.  You are encouraged to ask me questions as we go 
 in the Q&A section. Log your work in the Logs section. Use Fable if you can.
 
+2. I have answered the questions in the Q&A section; please check my answers.  Continue your exploration.   This time create some initial figures describing the data.  If you have any new questions, please ask them in the Q&A section. Log your work in the Logs section.  Use Fable if you can.
+
 ## Q&A
 
 **Q (2026-07-15, from exploration):** The 2026 beta ships two groups of files,
@@ -37,14 +40,34 @@ in the Q&A section. Log your work in the Logs section. Use Fable if you can.
 periods — `lt` mean = 2007–2014, `st` mean = 2017–2025 — not two resolutions.
 Is that the right interpretation, and which should the climatology work treat as
 primary?
+>A. Yes, that is currect.
 
 **Q:** What is the intended scope — which lines (56/66/80/90/alongshore), which
 vertical coordinate (depth vs. potential density), and which variables are the
 focus for the climatology work?
+>A. We will consider all lines, both vertical coordinates, and all variables.
 
 **Q:** Should dissolved oxygen be part of this climatology? It is absent from
 the 2026 beta NetCDF files but present in the older `doxy_*` products under
 `$OS_SPRAY/CUGN/`.
+>A. That is odd.  I expect DO to be present.
+
+**Correction (2026-07-15):** You were right — DO **is** present. My earlier
+"no DO" claim came from only inspecting `lt` line 90. A scan of all 80 files
+shows `doxy` (and `acoustic_backscatter`) in all 50 short-term (`st`) files;
+they are absent from the 30 long-term (`lt`) files, consistent with the
+2007–2014 baseline predating routine oxygen/backscatter sensors.
+
+**Q (new, 2026-07-15):** Is it expected that DO and acoustic backscatter exist
+only in the short-term files? If the climatology needs a long-term DO field,
+that would require a different approach.
+
+**Q (new):** `chlorophyll_a` is dropped from the `mean_sigma` files but present
+in every other product/coordinate combination — intentional?
+
+**Q (new):** The `total`/`anomaly` time axes carry all-NaN 10-day slots after
+2026-07-10 (today). Should downstream code trim these, or retain them as
+placeholders for the rolling product?
 
 ## Logging
 
