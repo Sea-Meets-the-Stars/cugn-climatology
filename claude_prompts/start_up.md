@@ -7,8 +7,9 @@ This repository will generate climatologies for the California Underwater Glider
 ## Prompts
 
 1. Read this file.  Execute the 1st task under "Claude/CLAUDE.md file"
-2. Read this file.  Execute the 1st task under "Skills"
-3. Read this file.  Execute the 1st task under "Basic start up"
+2. Read this file.  Execute the 1st task under "Claude/Skills"
+3. Read this file.  Execute the 1st task under "Claude/Settings"
+4. Read this file.  Execute the 1st task under "Basic start up"
 
 
 ## Claude
@@ -27,6 +28,8 @@ This repository will generate climatologies for the California Underwater Glider
 1. Copy over the skills/ files from the cugn repository.
 
 ### Settings
+
+1. Copy over the settings.json file from the `IOPtics` repository.
 
 ## Basic start up
 

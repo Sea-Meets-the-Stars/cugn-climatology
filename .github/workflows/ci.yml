@@ -1,0 +1,51 @@
+# cugn-climatology CI — data-independent tests only.
+#
+# CI is deliberately light: it installs the dependencies and runs `pytest -q`.
+# Data-dependent analyses require the Spray glider files, which are not
+# mounted on the runner. This job is advisory: it checks that the package
+# installs and imports cleanly.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# Cancel superseded runs on the same ref to save runner time.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Tests (pytest, py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.12 = a supported minimum; 3.14 = the `ocean14` dev environment.
+        python-version: ['3.12', '3.14']
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Smoke check (import cugn_climatology)
+        run: python -c "import cugn_climatology; print('cugn_climatology imported OK')"
+
+      - name: Run tests
+        run: pytest -q
