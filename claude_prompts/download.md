@@ -18,17 +18,33 @@ I will refer to it as `2026 beta`.
 ## Prompts
 
 1, Execute the first task under Grab the data.
+2. Execute the second task under Explore.
 
 ## Grab the data
 
 1. This webpage -- `https://spraydata.ucsd.edu/products/cugn-climatology/new.php` -- under Data Access has a list of NetCDF files.  Please download the files to the `$OS_SPRAY/CUGN/Climatology/2026 beta` directory.  If you have any questions, please ask in the Q&A section below.  Log your work.
 
-## Prompts for Claude Science
+## Explore
 
-1. I have just downloaded the 30 CUGN climatology NetCDF files from   
-https://spraydata.ucsd.edu/products/cugn-climatology/ and put them on this laptop in the $OS_SPRAY/CUGN/Climatology directory.  I wish for you to explore these data and report on your findings.  You are encouraged to ask me questions as we go.   Please ask them here and also log them in the file Oceanography/python/cugn/claude_prompts/prep_for_science.md.  Also log your work in the Logs section of that file.
+1. I have just downloaded the CUGN climatology NetCDF files from   
+`https://spraydata.ucsd.edu/products/cugn-climatology/new.php` and put them on this laptop in the `$OS_SPRAY/CUGN/Climatology/2026 beta` directory.  I wish for you to explore these data and report on your findings in the file `context/initial_exploration.md`.  You are encouraged to ask me questions as we go 
+in the Q&A section. Log your work in the Logs section. Use Fable if you can.
 
 ## Q&A
+
+**Q (2026-07-15, from exploration):** The 2026 beta ships two groups of files,
+`lt` (long-term) and `st` (short-term), which appear to be different baseline
+periods — `lt` mean = 2007–2014, `st` mean = 2017–2025 — not two resolutions.
+Is that the right interpretation, and which should the climatology work treat as
+primary?
+
+**Q:** What is the intended scope — which lines (56/66/80/90/alongshore), which
+vertical coordinate (depth vs. potential density), and which variables are the
+focus for the climatology work?
+
+**Q:** Should dissolved oxygen be part of this climatology? It is absent from
+the 2026 beta NetCDF files but present in the older `doxy_*` products under
+`$OS_SPRAY/CUGN/`.
 
 ## Logging
 
@@ -66,3 +82,36 @@ Details:
   cleanly with xarray (dims depth=50, distance=107; variables include
   temperature, salinity, chlorophyll_a, sigma_t, potential_density,
   geostrophic_velocity, doppler velocities).
+
+### 2026-07-15 (Explored the 2026 beta climatology; wrote initial report)
+
+Explored all 80 files and wrote findings to `context/initial_exploration.md`.
+Also wrote the exploration as a repository script,
+`cugn_climatology/explore_2026beta.py` (run in `ocean14`), which emits
+`context/file_inventory.csv` (one row per file) and runs targeted checks.
+
+Key things learned:
+
+- **File naming decodes as `{group}_{product}_{vcoord}_{line}.nc`.** Groups:
+  `lt` (long-term) and `st` (short-term). Products: `mean`, `annual_cycle`,
+  `mean_annual_cycle`, `anomaly`, `total`. Vcoord: `depth` (50 levels, 10–500 m)
+  or `sigma` (21 potential-density levels, 25.0–27.0). Lines: 66/80/90 for lt;
+  56/66/80/90/al for st. Counts: lt = 3×5×2 = 30, st = 5×5×2 = 50, total 80.
+- **Verified the additive decomposition** (exact to float precision):
+  `total(t) = mean + annual_cycle[doy(t)] + anomaly(t)`, and
+  `mean_annual_cycle = mean + annual_cycle`. So mean/annual_cycle/anomaly are
+  the three independent pieces; the other two are derived.
+- **lt vs st are different baseline periods, not resolutions:** lt mean covers
+  2007–2014, st mean covers 2017–2025. The st mean is ~0.23 °C warmer than lt
+  on line 90 (max ~1.05 °C), consistent with recent warming.
+- Grids: cross-shore `distance` at 5 km, 0 inshore increasing offshore; each
+  line has its own length (56→300 km … 90→530 km, al→220 km). Time products
+  use a 10-day cadence; `annual_cycle` spans a nominal 365-day year.
+- 9 variables in depth files (T, S, chl-a, sigma_t, potential_density,
+  potential_temperature, geostrophic + 2 Doppler velocities); sigma files carry
+  7. **No dissolved oxygen** in these NetCDFs (unlike older `doxy_*` products).
+- The `total`/`anomaly` time axes are **padded to end-2026**: last valid step is
+  2026-07-10 (= today); later 10-day slots are all-NaN placeholders — a rolling
+  product.
+- Logged three open questions in the Q&A section above (lt/st intent, scope of
+  lines/coordinate/variables, and whether oxygen belongs in the climatology).
