@@ -1,6 +1,6 @@
-# Download the data
+# Download and explore the data
 
-This prompt doc will download the data for the California Underwater Glider Network (CUGN) climatology.
+This prompt doc will download and explore the data for the California Underwater Glider Network (CUGN) climatology.
 
 ## Process
 
@@ -20,6 +20,7 @@ I will refer to it as `2026 beta`.
 1, Execute the first task under Grab the data.
 2. Execute the first task under Explore.
 3. Execute the second task under Explore.
+4. Execute the third task under Explore.
 
 ## Grab the data
 
@@ -32,6 +33,15 @@ I will refer to it as `2026 beta`.
 in the Q&A section. Log your work in the Logs section. Use Fable if you can.
 
 2. I have answered the questions in the Q&A section; please check my answers.  Continue your exploration.   This time create some initial figures describing the data.  If you have any new questions, please ask them in the Q&A section. Log your work in the Logs section.  Use Fable if you can.
+
+3. Excellent work.  Please:
+
+    - Embed the figures in the `context/initial_exploration.md` file.
+    - Spend an hour or more with multiple agents exploring the data further
+    - If you can, generate code to calculate climatologies.
+    - As before, save any Python code generated
+    - Log your work in the Logs section.  
+    - Use Fable if you can.
 
 ## Q&A
 
@@ -61,13 +71,32 @@ they are absent from the 30 long-term (`lt`) files, consistent with the
 **Q (new, 2026-07-15):** Is it expected that DO and acoustic backscatter exist
 only in the short-term files? If the climatology needs a long-term DO field,
 that would require a different approach.
+>A. Yes, that is expected.  Those sensors were not available in the long-term baseline.
 
 **Q (new):** `chlorophyll_a` is dropped from the `mean_sigma` files but present
 in every other product/coordinate combination — intentional?
+>A. I think so..
 
 **Q (new):** The `total`/`anomaly` time axes carry all-NaN 10-day slots after
 2026-07-10 (today). Should downstream code trim these, or retain them as
 placeholders for the rolling product?
+>A. Trim
+
+**Q (new, 2026-07-16, from deeper exploration):** Oxygen still decreases at the
+500 m glider floor everywhere, so these products resolve only the upper flank of
+the OMZ (the core is deeper). Is 500 m the intended maximum depth?
+
+**Q (new):** The `doxy` variable's `long_name` says "Molar Concentration" but
+its units are per-mass (µmol kg⁻¹) — a metadata mismatch worth flagging to the
+data producer?
+
+**Q (new):** The short-term dissolved-oxygen record shows a negative trend
+(~−10 µmol/kg/decade near 140 m), but it is endpoint-sensitive (driven by an
+anomalously oxygenated 2018–19 at the start of a 9.5-yr record). Do you want the
+trend framed differently (exclude marine-heatwave years, reference to lt)?
+
+**Q (new):** The 2025–26 marine heatwave is still open at the end of record —
+should any writeup flag that its magnitude/duration will grow as data arrive?
 
 ## Logging
 
@@ -138,3 +167,80 @@ Key things learned:
   product.
 - Logged three open questions in the Q&A section above (lt/st intent, scope of
   lines/coordinate/variables, and whether oxygen belongs in the climatology).
+
+### 2026-07-15 (Checked Q&A answers, corrected DO finding, made initial figures)
+
+Reviewed the user's Q&A answers, verified them against the data, and produced a
+first set of descriptive figures.
+
+- **Corrected a wrong finding from the previous pass.** The user expected
+  dissolved oxygen to be present. A scan of all 80 files (not just `lt` line 90)
+  confirms DO **is** present: `doxy` and `acoustic_backscatter` appear in all 50
+  short-term (`st`) files and in none of the 30 long-term (`lt`) files. The `lt`
+  baseline (2007–2014) predates routine oxygen/backscatter sensors. Updated
+  `context/initial_exploration.md` §5 and the Q&A section accordingly.
+- Also noted `chlorophyll_a` is dropped only from `mean_sigma` files, and that
+  `potential_density` is carried only in `mean` / `mean_annual_cycle`.
+- **Wrote `cugn_climatology/figs_initial.py`** (run in `ocean14`), producing six
+  figures in `context/figs/`:
+  - fig01 line geometry map (5 lines along the CA coast)
+  - fig02 st mean cross-sections T/S/DO/chl-a (Line 90, depth) — shows the
+    oxygen-minimum layer and subsurface chlorophyll max
+  - fig03 mean T on density coordinates
+  - fig04 seasonal cycle of 10 m T vs distance (reordered to calendar Jan→Dec)
+  - fig05 interannual 10 m T anomaly Hovmöller (2017–mid-2026)
+  - fig06 st − lt mean T difference: surface-intensified warming (~0.75 °C)
+  - Visually verified all six; oceanographically sensible.
+- Plotting gotchas handled: pcolormesh dim ordering (use explicit
+  `.transpose(...)`), the annual-cycle time axis is cftime `DatetimeNoLeap` and
+  non-monotonic (nominal year starts Jan 10), so it is reordered by day-of-year;
+  padded end-of-2026 anomaly steps are dropped before plotting.
+- Logged three new questions in the Q&A section (DO/backscatter only in `st`;
+  chl-a missing on density coords; whether to trim the padded end-of-record
+  slots).
+
+### 2026-07-16 (Embedded figures, multi-agent deep exploration, climatology code)
+
+Executed the third Explore task. Embedded all figures into
+`context/initial_exploration.md`, ran a multi-agent deep exploration, and wrote
+validated climatology-computation code. The user's Q&A answers were applied
+(all lines / both coords / all variables; DO expected & present in st; trim the
+padded end-of-record steps).
+
+**Figures embedded.** `context/initial_exploration.md` now inlines the six
+initial figures (§6), the deeper-exploration figures (§8), and the climatology
+validation figure (§9).
+
+**Climatology code (the key deliverable).** `cugn_climatology/climatology.py`
+reproduces `total = mean + annual_cycle[doy] + anomaly`:
+- `compute_climatology(da, baseline, nharm=3)` — baseline-windowed mean,
+  multi-harmonic seasonal fit (period 365.25 d, mean-removed), residual anomaly;
+  trims trailing all-NaN steps.
+- `validate_against_shipped(...)` + `python -m cugn_climatology.climatology`.
+- Validation: self-reconstruction exact to ~1e-16; recomputed mean vs shipped
+  RMS 0.036 °C (amp 2.5 °C), annual cycle ~0.08 °C. Residual is expected since
+  shipped products came from denser Level-3 input, not the 10-day `total`.
+- `cugn_climatology/figs_climatology_validation.py` → `context/figs/clim_validation.png`.
+
+**Multi-agent exploration.** Ran four parallel analysis agents; each saved
+runnable scripts to `cugn_climatology/analysis/` and figures to `context/figs/`.
+All 28 figures verified to render; a representative subset was spot-checked
+visually and is oceanographically sound.
+- **Water masses (`wm_`):** two end-members; clean N→S along-isopycnal
+  spiciness gradient (56→90: 0.08→0.45 kg/m³ on σθ=25.5); TEOS-10 stratification.
+- **Seasonal (`seas_`):** annual+semiannual explain 93–95% (T, O₂); T amp
+  ~2–2.3 °C, max Sep, e-folding 50–70 m; downward phase propagation reversing to
+  winter below ~70 m; lt≈st for the cycle.
+- **Interannual (`iav_`):** 2014–16 Blob (+3.0 °C) and a stronger, still-open
+  2025–26 MHW (+3.3 °C); surface-intensified; EOF1 = 49.9%.
+- **Biogeochemistry (`bgc_`):** OMZ core below 500 m glider floor; hypoxia
+  37–48% of section, shoaling southward; O₂ organized on isopycnals; SCM
+  decoupled from OMZ; endpoint-sensitive negative O₂ trend.
+
+**New questions logged** in Q&A (2026-07-16): OMZ core below glider range /
+intended max depth; `doxy` long_name vs per-mass units mismatch; framing of the
+deoxygenation trend; the still-open 2025–26 MHW.
+
+**Note:** all generated code is saved to disk (per repo convention) and left
+uncommitted for the user to `git add`. Only `context/figs/` and
+`cugn_climatology/` were written.
