@@ -20,6 +20,8 @@ If you need to run Python, use the "ocean14" conda environment.
 
 2. I have answered the questions in the Q&A section.  Please check my answers.  Continue your work and create the context file.  Log your work in the Logs section.  Use Fable if you can.
 
+3. I have downloaded the Rudnick et al. 2017 reference paper and put it in `context/rudnick2017.pdf`.  Please read it and add what you learn to the context file.  Log your work in the Logs section.  Use Fable if you can.
+
 ## Q&A
 
 I examined the config, MATLAB source, plots, and website source. Before writing
@@ -174,3 +176,38 @@ units mismatch, chl-a missing from mean_sigma, DO st-only, topomask stripes,
 rolling-product padding, EOS-80 vs TEOS-10).
 
 Left uncommitted per repo convention.
+
+### 2026-07-17 (Read Rudnick et al. 2017; added §13 to the context file)
+
+Read the reference paper `context/rudnick2017.pdf` (Rudnick, Zaba, Todd & Davis
+2017, *Prog. Oceanogr.* 154, 64–106) and added a new **§13** to
+`context/context_cugn_2026beta.md` summarizing it, plus a header row and a
+refined baseline note.
+
+What the paper adds/confirms:
+- **It is the methodology paper of record.** The 2026 beta is its operational
+  continuation: the paper covers the `lt` foundation (3 lines 66.7/80/90, T/S/
+  velocity only, base years 2007–2013); the 2026 beta extends it with lines
+  56.7 + alongshore, chlorophyll/backscatter/**oxygen**, the `st` run, and
+  rolling updates. The paper even flags Doppler/fluorescence as "may be added in
+  future" — now realized.
+- **Authoritative method parameters**, matching the MATLAB I read: annual cycle =
+  constant + 3 harmonics (7 functions), period 365.25 d, 5 km spacing, Gaussian
+  along-line window **L = 15 km** (from the T spectrum break at k₀=0.03 cpkm);
+  anomaly objective map with **time scale 60 d, length scale 30 km**,
+  noise/signal 0.1, on 10 m × 5 km × 10 d, masked where error/signal > 0.3.
+- **Base-year clarification (corrects my earlier note):** the annual cycle is
+  fit over complete years **2007–2013 (90/80), 2008–2013 (66.7)**, deliberately
+  stopping before 2014 to keep the 2014–2016 warm anomaly out of the base cycle
+  — consistent with the `lt` mean `time_coverage` attr (2007-01-01→2014-01-01).
+- **Mean geostrophic velocity is referenced to the glider depth-average
+  (absolute) velocity** via thermal wind — a distinguishing capability.
+- **SoCal Temperature Index** (Line 90, 50 m, 0–200 km, 3-mo running mean) tracks
+  the Oceanic Niño Index — a ready validation target for the Python port. The
+  paper's Blob (2014–2016) discussion matches the interannual signal our own §8c
+  analysis recovered.
+- **Distribution** described in the paper (menu-driven figures + CF NetCDF at
+  spraydata.ucsd.edu) matches the website layer documented in §9.
+
+Read the paper in three PDF passes (intro/methods/mean, annual-cycle results,
+interannual + conclusions/references). Context file left uncommitted.

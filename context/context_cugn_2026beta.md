@@ -15,6 +15,7 @@ where `$OS_SPRAY = /home/xavier/Projects/Oceanography/data/Spray/`):
 | `2006/` | Long-term (`lt`) run: `nc/` outputs + `plots/66/` figures |
 | `2017/` | Short-term (`st`) run: `nc/` outputs only (no plots provided) |
 | `web/cugn-climatology/` | `new.php` + `assets/catalog2026.js` — the website |
+| `context/rudnick2017.pdf` | Rudnick et al. (2017) — the methodology paper (see §13) |
 
 > The MATLAB `.mat` inputs (`anncycXX.mat`, `mapXX.mat`) and the Level-3
 > combined-mission source are **not** on this laptop. Per project decision, the
@@ -339,5 +340,109 @@ udopacross, oxumolkg, depth`).
 - Trailing all-NaN time steps = rolling-product padding (§4.7); trim before use.
 - EOS-80 vs TEOS-10 (§4.5).
 - `allanncyc_var_split.m` carries per-line `yearstart` (56/along later than
-  66/80/90) and a `yearend` parameter; the authoritative baseline windows are
-  the NetCDF `time_coverage_*` attributes (lt 2007–2014, st 2017–2025).
+  66/80/90) and a `yearend` parameter. The reference paper (§13) states the
+  annual cycle was fit over **complete years 2007–2013 (lines 90/80) and
+  2008–2013 (line 66.7)**, deliberately stopping before 2014 so the 2014–2016
+  warm anomaly does not contaminate the base cycle — consistent with the `lt`
+  mean `time_coverage` attr (2007-01-01 → 2014-01-01 = complete years
+  2007–2013). Base years will differ for the `st` (2017-based) run and are
+  ultimately recorded in each product's `time_coverage_*` attributes.
+
+---
+
+## 13. Reference: Rudnick, Zaba, Todd & Davis (2017)
+
+*"A climatology of the California Current System from a network of underwater
+gliders," Progress in Oceanography 154, 64–106,
+[doi:10.1016/j.pocean.2017.03.002](https://doi.org/10.1016/j.pocean.2017.03.002).*
+Local copy: `context/rudnick2017.pdf`. This is the **methodology paper** behind
+the climatology; the 2026 beta is its operational continuation. Key points and
+how they relate to the pipeline above:
+
+### 13.1 What the paper covers vs the 2026 beta
+- The paper documents the **long-term (`lt`) foundation**: three lines
+  (66.7, 80.0, 90.0), physical variables only (**temperature, salinity,
+  velocity**), base years 2007–2013. The 2026 beta **extends** it: adds Line
+  56.7 and the alongshore line, adds chlorophyll / acoustic backscatter /
+  **dissolved oxygen**, adds the short-term (`st`, 2017-based) run, and runs as
+  a rolling product. The paper explicitly notes Doppler backscatter and
+  fluorescence were *not yet* in the climatology but "may be added in the
+  future" — the 2026 beta is that future.
+- Three products defined exactly as in the NetCDFs: **mean, annual cycle, and
+  anomaly from the annual cycle** — "a weighted least-squares fit to derive the
+  mean and annual cycle, and an objective map to produce the anomaly."
+
+### 13.2 Platform & data (paper §2) — confirms/enriches config values
+- Spray gliders, surface→500 m, 3-h dive cycle, ~3 km horizontal per cycle,
+  ~0.25 m s⁻¹; missions ~100 days, ~2000 km, 4–6 sections; ~0.01 m s⁻¹
+  depth-average velocity accuracy from GPS dead-reckoning.
+- **Sea-Bird 41CP CTD**, pumped 10 cm³ s⁻¹, sampled every 8 s → ~0.8 m vertical
+  resolution at 0.1 m s⁻¹; **ascent-only** sensor use; off at 2 m; **5 m
+  excluded** (bubbles); **binned to 10-m bins, 10–500 m** — this binned product
+  is the climatology input.
+- ADCP: **Sontek Argonaut 750 kHz / 4-m bins**; from 2013 some **Nortek AD2CP
+  1 MHz / 2-m bins** (the frequency change noted in `variables.json`). Backscatter
+  ≈ zooplankton proxy; Seapoint fluorometer → chlorophyll.
+
+### 13.3 Methods (paper §3) — the authoritative description of the pipeline
+- **Annual cycle:** least-squares fit of a **constant + first three annual
+  harmonics = 7 functions** (sines/cosines), **annual period 365.25 days**, at
+  **5 km intervals**. Base years **2007–2013** (66.7: 2008–2013). A **Gaussian
+  along-line window** `w(x) = exp(-x²/L²)` with **L = 15 km** weights the fit;
+  `L` is chosen from the temperature wavenumber spectrum break near
+  `k₀ = 0.03 cpkm`; data with `w < 1e-3` are dropped. → matches
+  `annualcycleg_var*.m` (K=3, xwidth=15, ω=2π/365.25).
+- **Anomaly objective map:** autocorrelation estimated in 10 km × 40 day bins;
+  a 2-D Gaussian fit at lags < 200 km / < 200 days gives an **e-folding time
+  scale 60 days and length scale 100 km**. To avoid over-smoothing, the map
+  actually uses a Gaussian with **time scale 60 days and length scale 30 km**,
+  **noise/signal = 0.1**, on a **10 m × 5 km × 10 day** grid. Error grows with
+  distance from data; the map is **masked where error/signal variance > 0.3**.
+  → matches `climatologyCCS_New.m` (Lt=60, Lx=30, noise=0.1) and
+  `errmask.m` (0.3).
+- Mean fields are simply the **constants** of the least-squares fits; mean
+  potential/in-situ density from mean T,S; **mean geostrophic velocity from
+  thermal wind referenced to the depth-average velocity** (the glider's absolute
+  velocity — a distinguishing capability vs level-of-no-motion assumptions).
+
+### 13.4 Physical results (paper §4–5) — scientific context for the products
+- **Mean circulation:** poleward **California Undercurrent** inshore/subsurface,
+  equatorward **California Current** offshore. Gliders' absolute velocity reveals
+  a **deep poleward flow offshore of the Santa Rosa Ridge** (Line 90, through the
+  Southern California Bight; ridge ~200 km offshore) not seen in
+  level-of-no-motion calculations. Pycnocline strongest in the upper ~100 m,
+  shallow nearshore and deepening offshore.
+- **Annual cycle:** near-surface T driven by air–sea heat flux (warmest early
+  fall, coolest late winter at 10 m); at ~50 m the cycle is nearly **90° out of
+  phase** (spring cooling from wind-driven upwelling); an **offshore-propagating
+  annual (Rossby-wave-like) feature**; the undercurrent peaks in **summer** with
+  a semiannual component on lines 80/66.7.
+- **Interannual:** the paper defines a **"SoCal Temperature Index"** — Line 90.0
+  temperature at 50 m averaged over the inshore 0–200 km, 3-month running mean —
+  which tracks the **Oceanic Niño Index**. Documented events: 2009–2010 El Niño,
+  2010–2011 La Niña, the **2014–2015 NE Pacific warm anomaly ("the Blob")**, and
+  the **2015–2016 El Niño**; anomalous downwelling on all lines 2014–2016 (peak
+  late 2015), diagnosed via the depth of the 26 kg m⁻³ isopycnal. (This matches
+  the Blob our own §8c interannual analysis recovered in the `lt` files.)
+
+### 13.5 Distribution (paper §6) — matches the website layer (§9)
+The paper states the climatology is distributed two ways at
+`http://spraydata.ucsd.edu`: (1) **figures** of variables on many surfaces
+(depth/distance sections, depth surfaces, isopycnal surfaces, time/depth slices)
+via a menu-driven browse/download interface, and (2) **CF-compliant NetCDF** on
+regular depth/distance/time grids — updated regularly. This is exactly the
+`new.php` + `catalog2026.js` + NetCDF Data-Access structure documented in §9.
+
+### 13.6 Implications for the Python port
+- The paper is the **specification of record** for the mean + annual-cycle +
+  anomaly method; cite it (and its parameter choices) when implementing.
+- **Base-year choice matters:** excluding anomalous years (here ≥2014) from the
+  annual-cycle fit is a deliberate methodological decision, not an accident —
+  preserve the ability to set the base window explicitly.
+- The **SoCal Temperature Index** (Line 90, 50 m, 0–200 km, 3-mo running mean)
+  is a ready-made, paper-sanctioned validation/diagnostic target for the Python
+  code.
+- Two distinct smoothing scales are intentional: **15 km** Gaussian window for
+  the annual-cycle *fit* vs **30 km / 60 day** covariance for the anomaly *map*
+  (the anomaly needs a heavier low-pass because it carries large-scale
+  interannual variance).
