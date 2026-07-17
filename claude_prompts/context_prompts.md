@@ -18,6 +18,8 @@ If you need to run Python, use the "ocean14" conda environment.
 
 1, Examine the data, code, and config files described in the `Data` section above.  Ask me a set of questions in the Q&A section below before writing the context file.  Log your work in the Logs section.  Use Fable if you can.
 
+2. I have answered the questions in the Q&A section.  Please check my answers.  Continue your work and create the context file.  Log your work in the Logs section.  Use Fable if you can.
+
 ## Q&A
 
 I examined the config, MATLAB source, plots, and website source. Before writing
@@ -134,3 +136,41 @@ it lists NetCDF downloads and drives interactive figures via
 **Not present on this laptop:** the MATLAB `.mat` inputs (`anncycXX.mat`,
 `mapXX.mat`) and the Level-3 combined-mission source data — so the pipeline can
 be documented but not executed here. Flagged in Q&A.
+
+### 2026-07-17 (Wrote the comprehensive context file)
+
+Checked the user's Q&A answers (comprehensive/detailed doc to guide the Python
+port; document as-designed, no MATLAB execution; include website mechanics;
+record canonical parameters; 2006=lt / 2017=st confirmed; no st plots exist) and
+wrote `context/context_cugn_2026beta.md`.
+
+To write it accurately I read the core MATLAB math (not just the drivers):
+- `annualcycleg_var_covm.m` / `anncycinterp.m` — the Gaussian-windowed harmonic
+  annual-cycle fit (K=3, ω=2π/365.25 d, xwidth=15 km) and its evaluation; the
+  `constant` term is the mean.
+- `climatologyCCS_New.m` + `computeCovMtrx.m` + `generateHovMap_AnomOnly.m` —
+  the objective analysis (Gauss–Markov) that produces interannual anomalies
+  (Lx=30 km, Lt=60 d, noise=0.1, map = B·(A⁻¹d)).
+- `allanommap.m`, `anommap2map.m`, `map2anommap.m`, `anncyc2avmap_var.m`,
+  `anncyc2meanmap_var.m`, `demeanmap.m`, `interpmap_sigma.m` — how the 10
+  products are assembled and the `*tm/*em/*sig` suffixes map to the NetCDFs.
+- `addderivedvars.m` — derived vars via **EOS-80 `sw_*`** (theta/rho/sigma/geov/
+  ox); important for the Python port.
+- `topomask.m` / `errmask.m` / `datemask.m` — the three masks; datemask holds
+  per-line start dates (66:2007-04-20, 80:2006-02-26, 90:2006-10-20,
+  al:2019-01-01, 56:2019-12-13) that explain the differing record starts.
+- Product configs' `data_product` blocks — the exact source-variable mapping
+  (e.g. mean_depth←meanmaptm, annual_cycle_depth←avmapnomeantm [mean-removed],
+  mean_annual_cycle_depth←avmaptm [full], total_depth←maptmem, anomaly←anommaptmem).
+- Website `new.php` (interactive PNG explorer: experiment/baseline/variable/
+  plot/dimension/projection/subset controls + Data Access downloads) and
+  `catalog2026.js` (loads daily `file_info2026.json`; static PNG+JSON driven).
+
+The context file (12 sections) covers: the two runs, the 10 products + source
+map, grids, the full pipeline step-by-step, a canonical-parameters table, the
+config schema, NetCDF conventions, plots, website mechanics, explicit guidance
+for the Python port, a key-file reference table, and known gotchas (doxy
+units mismatch, chl-a missing from mean_sigma, DO st-only, topomask stripes,
+rolling-product padding, EOS-80 vs TEOS-10).
+
+Left uncommitted per repo convention.
