@@ -9,7 +9,7 @@ If you need to run Python, use the "ocean14" conda environment.
 
 ## Data
 
-- There are a set of JSON config files at `$OS_SPRAY/CUGN/Climatology/Original/config/` that were used to generate the `2026 beta` climatology.
+- There are a set of JSON config files at `$OS_SPRAY/CUGN/Climatology/Origynal/config/` that were used to generate the `2026 beta` climatology.
 - There is a large set of PNG figures in `$OS_SPRAY/CUGN/Climatology/Original/2006/plots/66/` that are currently used for the website.
 - The file `$OS_SPRAY/CUGN/Climatology/Original/web/cugn-climatology/new.php` is the source for the `2026 beta` climatology website.
 - The folder `$OS_SPRAY/CUGN/Climatology/Original/src_231/` contains the MATLAB code that was used to generate the `2026 beta` climatology.
